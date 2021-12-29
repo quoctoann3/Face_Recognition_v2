@@ -1,0 +1,8 @@
+Dataset/FaceData/processed\person_1_yeonwoo\img_face_7.png 95 38 261 250
+Dataset/FaceData/processed\person_1_yeonwoo\img_face_4.png 55 34 226 241
+Dataset/FaceData/processed\person_1_yeonwoo\img_face_8.png 84 34 255 251
+Dataset/FaceData/processed\person_1_yeonwoo\img_face_3.png 51 30 208 241
+Dataset/FaceData/processed\person_1_yeonwoo\img_face_2.png 20 22 162 221
+Dataset/FaceData/processed\person_1_yeonwoo\img_face_6.png 43 23 208 247
+Dataset/FaceData/processed\person_1_yeonwoo\img_face_1.png 72 64 240 283
+Dataset/FaceData/processed\person_1_yeonwoo\img_face_5.png 60 21 220 227

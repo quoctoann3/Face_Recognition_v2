@@ -1,0 +1,20 @@
+tensorflow==1.15.5
+keras==2.3.1
+scipy==1.1.0
+scikit-learn
+opencv-python
+h5py
+matplotlib
+Pillow
+requests
+psutil
+imutils
+
+#Link Models Folder:https://drive.google.com/drive/folders/1_FDthvpf9WlBA2LjKjkVwdjW6z7FS3N0
+
+How to run?
+1: python src/align_dataset_mtcnn.py  Dataset/FaceData/raw Dataset/FaceData/processed --image_size 160 --margin 32  --random_order --gpu_memory_fraction 0.25
+2: python src/classifier.py TRAIN Dataset/FaceData/processed Models/20180402-114759.pb Models/facemodel.pkl --batch_size 1000
+3:
+cam: python src/face_rec_cam.py 
+video: python src/face_rec.py --path video/video.mp4
