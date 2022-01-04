@@ -1,3 +1,4 @@
+import sys
 import dlib
 import numpy as np
 import cv2
@@ -12,6 +13,7 @@ from tkinter import messagebox
 
 # Use frontal face detector of Dlib
 detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor('Models/shape_predictor_68_face_landmarks.dat')
 
 class Face_Register:
     def __init__(self):
@@ -25,7 +27,7 @@ class Face_Register:
         self.win.title("FACE REGISTER")
 
         # PLease modify window size here if needed
-        self.win.geometry("1000x600")
+        self.win.geometry("1200x600")
         self.win.minsize(1200,600)
         self.win.maxsize(1200,600)
 
@@ -72,7 +74,6 @@ class Face_Register:
         self.fps = 0
         self.fps_show = 0
         self.start_time = time.time()
-
         self.cap = cv2.VideoCapture(0)  # Get video stream from camera
         
         # self.cap = cv2.VideoCapture("test.mp4")   # Input local video
@@ -131,25 +132,27 @@ class Face_Register:
 
         tk.Button(self.frame_right_info,
                   text='Input',
-                  command=self.GUI_get_input_name).grid(row=8, column=2, padx=5)
+                  command=self.GUI_get_input_name).grid(row=8, column=1, padx=5)
 
         # Step 2: Save current face in frame
         tk.Label(self.frame_right_info,
                  font=self.font_step_title,
-                 text="Step 2: Save face image").grid(row=9, column=0, columnspan=2, sticky=tk.W, padx=5, pady=20)
+                 text="Step 2: Collect face image (30 images)").grid(row=9, column=0, columnspan=2, sticky=tk.W, padx=5, pady=20)
 
         tk.Button(self.frame_right_info,
-                  text='Take current face',
-                  command=self.save_current_face).grid(row=10, column=0, columnspan=3, sticky=tk.W)
+                  text='SHOOT CURRENT FACE',bg='orange', fg='white',
+                  command=self.save_current_face, height = 5, width = 20).grid(row=10, column=0, columnspan=3, sticky=tk.W)
  
-        # Step 3: Save converted csv file
-        tk.Label(self.frame_right_info,
-                 font=self.font_step_title,
-                 text="Step 3: Save face data").grid(row=12, column=0, columnspan=2, sticky=tk.W, padx=5, pady=20)
-
+        # Step 3: Save face
         tk.Button(self.frame_right_info,
                   text='SAVE', bg='blue', fg='white',
-                  command=self.trainModelRec).grid(row=13, column=0, columnspan=3, sticky=tk.W)
+                  command=self.trainModelRec, height = 5, width = 20).grid(row=10, column=1, columnspan=3, sticky=tk.W)
+
+        # Night Mode
+ #       tk.Button(self.frame_right_info,
+ #                 text='NIGHT MODE (!)', bg='black', fg='white',
+ #                 command=self.nightMode, height = 1, width = 20).grid(row=12, column=2, columnspan=3, sticky=tk.W)
+
         # Show log in GUI
         
         self.log_all.grid(row=11, column=0, columnspan=20, sticky=tk.W, padx=5, pady=20)
@@ -159,7 +162,7 @@ class Face_Register:
     def trainModelRec(self):
         MsgBox = tk.messagebox.askquestion ('Saving data','Are you sure saving face data?',icon = 'info')
         if MsgBox == 'yes':
-           os.system('python src/align_dataset_mtcnn.py  Dataset/FaceData/raw Dataset/FaceData/processed --image_size 160 --margin 32  --random_order --gpu_memory_fraction 0.25')
+           os.system('python src/align_dataset_mtcnn.py  Dataset/FaceData/raw Dataset/FaceData/processed --image_size 160 --margin 32  --random_order --gpu_memory_fraction 0.7')
            os.system('python src/classifier.py TRAIN Dataset/FaceData/processed Models/20180402-114759.pb Models/facemodel.pkl --batch_size 1000')
            tk.messagebox.showinfo(title='Notification', message='Saved data successfully')
         else:
@@ -232,13 +235,12 @@ class Face_Register:
                                 self.face_ROI_width_start - self.ww + jj]
                     self.log_all["text"] = "\"" + self.current_face_dir + "/img_face_" + str(
                         self.ss_cnt) + ".jpg\"" + " saved!"
-                    self.face_ROI_image = cv2.cvtColor(self.face_ROI_image, cv2.COLOR_BGR2RGB)
+                    self.face_ROI_image = cv2.cvtColor(self.face_ROI_image, cv2.COLOR_BGR2GRAY)
 
                     cv2.imwrite(self.current_face_dir + "/img_face_" + str(self.ss_cnt) + ".jpg", self.face_ROI_image)
                     logging.info("%-40s %s/img_face_%s.jpg", "Save into：",
                                  str(self.current_face_dir), str(self.ss_cnt) + ".jpg")
-                                 
-                                 
+                                                                 
                 else:
                     self.log_all["text"] = "Please do not out of range!"
             else:
@@ -250,6 +252,10 @@ class Face_Register:
         try:
             if self.cap.isOpened():
                 ret, frame = self.cap.read()
+                # Capture frame-by-frame
+                ret, frame = self.cap.read()
+                cv2.normalize(frame, frame, 0, 300, cv2.NORM_MINMAX)
+                frame = cv2.flip(frame, 1)   
                 return ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         except:
             tk.messagebox.showerror('Error: No video input!!!')
@@ -271,9 +277,22 @@ class Face_Register:
                     # Compute the size of rectangle box
                     self.face_ROI_height = (d.bottom() - d.top())
                     self.face_ROI_width = (d.right() - d.left())
-                    self.hh = int(self.face_ROI_height / 2)
-                    self.ww = int(self.face_ROI_width / 2)
+                    self.hh = int(self.face_ROI_height / 4)
+                    self.ww = int(self.face_ROI_width / 4)
+                for rect in faces:
+                    # Get the landmark points
+                    gray = cv2.cvtColor(self.current_frame, cv2.COLOR_BGR2GRAY)
+                    shape = predictor(gray, rect)
+                # Convert it to the NumPy Array
+                    shape_np = np.zeros((68, 2), dtype="int")
+                    for i in range(0, 68):
+                        shape_np[i] = (shape.part(i).x, shape.part(i).y)
+                    shape = shape_np
 
+                    # Display the landmarks
+                    for i, (x, y) in enumerate(shape):
+                    # Draw the circle to mark the keypoint 
+                        cv2.circle(self.current_frame, (x, y), 1, (0, 255, 0), -1)
                     # If the size of ROI > 480x640
                     if (d.right() + self.ww) > 640 or (d.bottom() + self.hh > 480) or (d.left() - self.ww < 0) or (
                             d.top() - self.hh < 0):
